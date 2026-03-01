@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ASCII Cam — Real-time ASCII art webcam with edge detection, colour modes, recording and more. A portfolio project by Salman Moosa." />
+  <title>ASCII CAM — by Salman Moosa</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Preconnect for Google Fonts (loaded in CSS @import) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════════════════════════════════════ -->
+<nav id="top-nav" role="navigation" aria-label="Main navigation">
+  <span class="nav-logo">ASCII_CAM</span>
+  <ul>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#modes">Modes</a></li>
+    <li><a href="#tech-stack">Stack</a></li>
+    <li><a href="#source">Source</a></li>
+  </ul>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════════════════════ -->
+<header id="hero" class="scanlines">
+  <pre class="hero-pre" aria-hidden="true">
+ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</pre>
+
+  <h1 class="glitch" data-text="ASCII CAM">ASCII CAM</h1>
+
+  <p class="tagline">Real-time ASCII art from your webcam</p>
+
+  <div class="hero-badges">
+    <span class="badge">Vanilla JS</span>
+    <span class="badge">Canvas 2D</span>
+    <span class="badge">Web Workers</span>
+    <span class="badge">MediaRecorder</span>
+    <span class="badge">4 Render Modes</span>
+    <span class="badge">No Dependencies</span>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#demo" class="btn btn-primary">[ Launch Demo ]</a>
+    <a href="#about" class="btn">[ Learn More ]</a>
+    <a href="https://github.com/salman-m-498/asciicam" target="_blank" rel="noopener" class="btn">[ GitHub ]</a>
+  </div>
+
+  <pre class="hero-pre" style="margin-top:24px;" aria-hidden="true">
+ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</pre>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DEMO
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="demo">
+  <div class="section-header">
+    <h2 class="section-title glitch" data-text="LIVE DEMO">LIVE DEMO</h2>
+    <button id="settings-toggle" aria-expanded="false" aria-controls="settings-panel">
+      ⚙ Settings
+    </button>
+  </div>
+
+  <div class="terminal-window">
+    <!-- Title bar -->
+    <div class="terminal-titlebar" aria-hidden="true">
+      <span class="term-dot red"></span>
+      <span class="term-dot yellow"></span>
+      <span class="term-dot green"></span>
+      <span class="term-title">ascii_cam — /dev/video0 — 1280×720</span>
+    </div>
+
+    <div class="demo-body">
+      <!-- Canvas area -->
+      <div class="canvas-wrap" role="img" aria-label="Live ASCII webcam output">
+        <!-- Hidden video element — source for the ASCII pipeline -->
+        <video id="feed-video" autoplay muted playsinline></video>
+
+        <!-- Main render canvas -->
+        <canvas id="ascii-canvas" width="1280" height="720"></canvas>
+
+        <!-- Camera permission / error overlay -->
+        <div id="cam-permission" role="status" aria-live="polite">
+          <span>[ WAITING FOR CAMERA PERMISSION ]</span>
+          <span style="font-size:0.75rem;color:var(--green-dim);">Allow access to start the live feed</span>
+        </div>
+
+        <!-- Canvas HUD overlays -->
+        <div id="mode-label"   aria-live="polite">Basic ASCII</div>
+        <div id="fps-display"  aria-live="off">-- FPS</div>
+        <div id="status-bar"   aria-live="off">REC: OFF</div>
+      </div>
+
+      <!-- Settings sidebar -->
+      <aside id="settings-panel" aria-label="Camera settings">
+
+        <!-- ── Mode ── -->
+        <div class="setting-group">
+          <span class="group-title">Mode</span>
+          <div class="mode-grid">
+            <label class="mode-btn">
+              <input type="radio" name="mode" value="BASIC" />
+              <span>Basic</span>
+            </label>
+            <label class="mode-btn">
+              <input type="radio" name="mode" value="EDGE" />
+              <span>Edge</span>
+            </label>
+            <label class="mode-btn">
+              <input type="radio" name="mode" value="EDGE_REFINED" />
+              <span>Refined</span>
+            </label>
+            <label class="mode-btn">
+              <input type="radio" name="mode" value="COLOR" />
+              <span>Color</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ── Char Set ── -->
+        <div class="setting-group">
+          <label for="charset-select">Character Set</label>
+          <select id="charset-select" aria-label="Character set">
+            <option value="STANDARD">Standard (10 chars)</option>
+            <option value="BLOCKS">Blocks (Unicode)</option>
+            <option value="MINIMAL">Minimal (4 chars)</option>
+            <option value="DETAILED">Detailed (70 chars)</option>
+          </select>
+        </div>
+
+        <!-- ── Width ── -->
+        <div class="setting-group">
+          <label for="width-slider">Grid Width</label>
+          <div class="slider-row">
+            <input type="range" id="width-slider"
+              min="40" max="200" step="5" value="100"
+              aria-label="Grid width in characters" />
+            <span class="slider-value" id="width-value">100 cols</span>
+          </div>
+        </div>
+
+        <!-- ── Font Size ── -->
+        <div class="setting-group">
+          <label for="fontsize-slider">Font Size</label>
+          <div class="slider-row">
+            <input type="range" id="fontsize-slider"
+              min="6" max="20" step="1" value="10"
+              aria-label="Font size in pixels" />
+            <span class="slider-value" id="fontsize-value">10px</span>
+          </div>
+        </div>
+
+        <!-- ── Edge Threshold ── -->
+        <div class="setting-group">
+          <label for="threshold-slider">Edge Threshold</label>
+          <div class="slider-row">
+            <input type="range" id="threshold-slider"
+              min="10" max="200" step="5" value="50"
+              aria-label="Edge detection threshold" />
+            <span class="slider-value" id="threshold-value">50</span>
+          </div>
+        </div>
+
+        <!-- ── Saturation ── -->
+        <div class="setting-group">
+          <label for="saturation-slider">Saturation</label>
+          <div class="slider-row">
+            <input type="range" id="saturation-slider"
+              min="0" max="4" step="0.1" value="1.5"
+              aria-label="Color saturation multiplier" />
+            <span class="slider-value" id="saturation-value">1.5</span>
+          </div>
+        </div>
+
+        <!-- ── Frame Skip ── -->
+        <div class="setting-group">
+          <label for="frameskip-slider">Frame Skip</label>
+          <div class="slider-row">
+            <input type="range" id="frameskip-slider"
+              min="1" max="8" step="1" value="1"
+              aria-label="Process every Nth frame" />
+            <span class="slider-value" id="frameskip-value">1/1</span>
+          </div>
+        </div>
+
+        <!-- ── Colors ── -->
+        <div class="setting-group">
+          <span class="group-title">Colors</span>
+          <div class="color-row">
+            <div class="color-pick">
+              <label for="bg-color">Background</label>
+              <input type="color" id="bg-color" value="#000000" aria-label="Background color" />
+            </div>
+            <div class="color-pick">
+              <label for="fg-color">Foreground</label>
+              <input type="color" id="fg-color" value="#00ff41" aria-label="Foreground color" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions ── -->
+        <div class="setting-group">
+          <span class="group-title">Actions</span>
+          <div class="action-buttons">
+            <button id="btn-snapshot" class="btn" title="Download current frame as PNG">
+              [ SNAPSHOT ]
+            </button>
+            <button id="btn-record" class="btn" title="Record and download WebM video">
+              [ REC ]
+            </button>
+            <button id="btn-upload" class="btn" title="Convert a static image to ASCII">
+              [ UPLOAD IMAGE ]
+            </button>
+            <button id="btn-resume" class="btn" title="Resume live webcam feed"
+              style="display:none;">
+              [ RESUME CAM ]
+            </button>
+            <button id="btn-share" class="btn btn-primary" title="Copy shareable URL">
+              [ SHARE / COPY LINK ]
+            </button>
+          </div>
+
+          <!-- Hidden file input for image upload -->
+          <input type="file" id="upload-input" accept="image/*"
+            style="display:none;" aria-hidden="true" />
+        </div>
+
+      </aside><!-- /settings-panel -->
+    </div><!-- /demo-body -->
+  </div><!-- /terminal-window -->
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ASCII DIVIDER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++----------------------------------[ OUTPUT ]----------------------------------+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ABOUT
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="about">
+  <div class="section">
+    <div class="section-title">
+      <h2 class="glitch" data-text="ABOUT">ABOUT</h2>
+    </div>
+    <p class="section-sub">// what is ascii cam and why does it exist?</p>
+
+    <div class="about-grid">
+      <div class="about-text">
+        <p>
+          ASCII Cam started as a Python experiment: could I turn a live
+          webcam feed into something that looked like it came straight out
+          of a 1980s mainframe terminal? The answer was a resounding yes,
+          and the result was far more fun than expected.
+        </p>
+        <p>
+          The original version used <strong>OpenCV</strong> for camera capture and
+          Sobel edge detection, <strong>Pillow</strong> for font rendering, and
+          <strong>NumPy</strong> for fast array operations. It shipped with four
+          distinct render modes and a full keyboard-driven settings interface.
+        </p>
+        <p>
+          This web port brings the same pipeline to the browser — zero
+          dependencies, zero build step, just vanilla JavaScript running
+          inside a <strong>Web Worker</strong> so the ASCII conversion never
+          blocks your UI thread. All four modes are faithfully ported, and
+          new features like video recording, static image upload, and
+          shareable settings URLs are added on top.
+        </p>
+        <p>
+          The page you are reading right now <em>is</em> the portfolio. It
+          documents the project, explains the algorithm, lists every
+          library used, and links to the source — while also being a
+          live, interactive demo.
+        </p>
+        <div style="margin-top:20px;">
+          <a href="https://github.com/salman-m-498" target="_blank" rel="noopener" class="btn" style="margin-right:10px;">
+            [ GitHub Profile ]
+          </a>
+          <a href="https://github.com/salman-m-498/asciicam" target="_blank" rel="noopener" class="btn btn-primary">
+            [ OG Python Repo ]
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <pre class="about-ascii" aria-hidden="true">
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  @@@@@##########&&&&&&&&&&&&&++++@@@
+  @@@@#########&&&&&&&&&&&+++++^^^@@@
+  @@@########&&&&&&&&&&++++++^^^==@@@
+  @@########&&&&&&&&&&++++^^^===;;;@@
+  @@######&&&&&&&&&&+++++^^^==;;;::@@
+  @######&&&&&&&&&&+++^^^^===;;:::..@
+  @#####&&&&&&&&&++++^^^===;;:::....@
+  @####&&&&&&&&&++^^^====;;::....   @
+  @###&&&&&&&&++^^===;;;;::...      @
+  @##&&&&&&&&+^^^==;;;:::...        @
+  @##&&&&&&+^^^==;;;::...           @
+  @#&&&&&&+^^===;;::..              @
+  @#&&&&&+^^==;;::..                @
+  @#&&&&&^^==;;::..                 @
+  @#&&&&+^==;;:..              @@@@@@
+  @##&&&^^=;;:..           @@@@@@@@@
+  @###&&^=;;:..        @@@@@@@@@@@@
+  @####&&;;:..    @@@@@@@@@@@@@@@
+  @@####&:.   @@@@@@@@@@@@@@@@
+  @@@#####@@@@@@@@@@@@@@@@@@
+  @@@@@@@@@@@@@@@@@@@@@@
+  @@@@@@@@@@@@@@@@
+        </pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ASCII DIVIDER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++----------------------------[ HOW IT WORKS ]----------------------------------+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="how-it-works">
+  <div class="section">
+    <div class="section-title">
+      <h2 class="glitch" data-text="HOW IT WORKS">HOW IT WORKS</h2>
+    </div>
+    <p class="section-sub">// the pipeline from pixels to characters</p>
+
+    <!-- Pipeline diagram -->
+    <div class="pipeline" role="list" aria-label="Rendering pipeline">
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">📷</div>
+        <div class="pipe-label">Camera</div>
+      </div>
+      <div class="pipe-arrow" aria-hidden="true">──▶</div>
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">⬇</div>
+        <div class="pipe-label">Downsample</div>
+      </div>
+      <div class="pipe-arrow" aria-hidden="true">──▶</div>
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">🔲</div>
+        <div class="pipe-label">Grayscale</div>
+      </div>
+      <div class="pipe-arrow" aria-hidden="true">──▶</div>
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">∇</div>
+        <div class="pipe-label">Sobel</div>
+      </div>
+      <div class="pipe-arrow" aria-hidden="true">──▶</div>
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">A</div>
+        <div class="pipe-label">Char Map</div>
+      </div>
+      <div class="pipe-arrow" aria-hidden="true">──▶</div>
+      <div class="pipe-step" role="listitem">
+        <div class="pipe-icon">🖼</div>
+        <div class="pipe-label">Canvas</div>
+      </div>
+    </div>
+
+    <!-- Step cards -->
+    <div class="steps-list">
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">01</span>
+        <h4>Camera Capture &amp; Downsample</h4>
+        <p>
+          Each animation frame, the live video is drawn onto a tiny
+          <code>&lt;canvas&gt;</code> scaled to exactly the character grid size
+          (e.g. 100 × 56 pixels for a 100-column grid). This gives us one
+          pixel per character cell — identical to OpenCV's
+          <code>cv2.resize()</code> in the Python version.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">02</span>
+        <h4>Grayscale Conversion</h4>
+        <p>
+          The raw RGBA <code>ImageData</code> is converted to grayscale using
+          the standard BT.601 luminance formula
+          <code>Y = 0.299R + 0.587G + 0.114B</code>. This produces a flat
+          <code>Uint8ClampedArray</code> that the Sobel kernels can run on efficiently.
+          All this happens inside a Web Worker to keep the main thread free.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">03</span>
+        <h4>Character Mapping (LUT)</h4>
+        <p>
+          A 256-entry lookup table is prebuilt from the active character set.
+          Each pixel's brightness [0 – 255] indexes directly into the LUT for
+          an O(1) character lookup per pixel. This is equivalent to Python's
+          <code>int(pixel / (255 / (len−1)))</code> formula, but compiled once.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">04</span>
+        <h4>Sobel Edge Detection</h4>
+        <p>
+          A hand-written 3 × 3 Sobel convolution computes horizontal and
+          vertical gradients (Gx, Gy). The magnitude
+          <code>√(Gx² + Gy²)</code> and direction
+          <code>arctan2(Gy, Gx)</code> determine which edge character
+          (<code>| - / \</code>) replaces a brightness character for pixels
+          above the threshold.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">05</span>
+        <h4>Non-Maximum Suppression</h4>
+        <p>
+          In Refined Edge mode, each pixel is only kept as an edge if it is a
+          local maximum along its gradient direction (0°/45°/90°/135°).
+          This thins double-pixel edges down to single-pixel lines, producing
+          far cleaner outlines — the same algorithm as Canny's first
+          thinning step.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-num" aria-hidden="true">06</span>
+        <h4>Colour Extraction &amp; Saturation</h4>
+        <p>
+          In Colour mode, the original (pre-grayscale) RGBA data is divided
+          into a grid of cells. The mean RGB of each cell drives the
+          <code>fillStyle</code> for that character. Saturation is enhanced with
+          an RGB → HSL → RGB conversion before averaging, matching
+          <code>PIL.ImageEnhance.Color</code>.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ASCII DIVIDER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++------------------------------[ MODES ]---------------------------------------+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODES
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="modes">
+  <div class="section">
+    <div class="section-title">
+      <h2 class="glitch" data-text="RENDER MODES">RENDER MODES</h2>
+    </div>
+    <p class="section-sub">// four ways to see the world in ASCII</p>
+
+    <div class="modes-grid">
+
+      <!-- BASIC -->
+      <div class="mode-card">
+        <div class="mode-card-preview" aria-hidden="true">@@@@@@@@@@@@##########&&&
+@@@@@@################&&&&&++
+@@@@####################&&&&&++^^
+@@@######################&&&&+++^^^=
+@@#########ooo###########&&&+++^^^==;
+@@#######oo   oo##########&&++++^^==;;
+@######oo       oo########&+++++^^==;;:
+@#####o           o#######&++^^^^==;;::
+@####o    @  @    o######&&+++^^^==;;::
+@####                #####&+++^^===;;::
+@####   \_____/   ####&++^^^===;;::.
+@#####o         o######+++^^===;;::..
+@######oo     oo#######+++^===;;::..
+@########ooooo#########++^===;;::...
+@####################&&&+++^^==;;:..
+@@##################&&&&+++^^^==;;..</div>
+        <div class="mode-card-info">
+          <h3>Basic ASCII</h3>
+          <p>Maps pixel brightness to characters by density. Bright pixels → sparse chars (<code>.</code>&nbsp;<code>:</code>), dark pixels → dense chars (<code>@</code>&nbsp;<code>#</code>). Pure brightness, no edge information.</p>
+        </div>
+      </div>
+
+      <!-- EDGE -->
+      <div class="mode-card">
+        <div class="mode-card-preview" aria-hidden="true">       <span>---------</span>
+     <span>/</span>         <span>\</span>
+    <span>/</span>           <span>\</span>
+   <span>|</span>  <span>---</span>   <span>---</span>  <span>|</span>
+   <span>|</span> <span>/</span>   <span>\</span> <span>/</span>   <span>\</span> <span>|</span>
+   <span>|</span> <span>|</span>   <span>|</span> <span>|</span>   <span>|</span> <span>|</span>
+   <span>|</span>  <span>\---/</span>   <span>\---/</span> <span>|</span>
+   <span>|</span>             <span>|</span>
+   <span>|</span>    <span>/----\</span>   <span>|</span>
+   <span>|</span>   <span>/</span>      <span>\</span>  <span>|</span>
+    <span>\</span>  <span>|</span>      <span>|</span> <span>/</span>
+     <span>\</span>  <span>\----/</span> <span>/</span>
+      <span>\---------/</span>
+</div>
+        <div class="mode-card-info">
+          <h3>Edge Detection</h3>
+          <p>Runs a 3 × 3 Sobel kernel on each frame. Pixels exceeding the magnitude threshold are replaced with directional characters (<code>|</code>&nbsp;<code>-</code>&nbsp;<code>/</code>&nbsp;<code>\</code>) that follow the gradient. Everything below threshold uses brightness mapping.</p>
+        </div>
+      </div>
+
+      <!-- EDGE REFINED -->
+      <div class="mode-card">
+        <div class="mode-card-preview" aria-hidden="true">        <span>--------</span>
+      <span>/</span>          <span>\</span>
+     <span>/</span>            <span>\</span>
+    <span>|</span>   <span>--</span>    <span>--</span>   <span>|</span>
+    <span>|</span>  <span>/</span>  <span>\</span>  <span>/</span>  <span>\</span>  <span>|</span>
+    <span>|</span>  <span>|</span>  <span>|</span>  <span>|</span>  <span>|</span>  <span>|</span>
+    <span>|</span>   <span>\--/</span>    <span>\--/</span>  <span>|</span>
+    <span>|</span>              <span>|</span>
+    <span>|</span>    <span>/-----\</span>   <span>|</span>
+    <span>|</span>   <span>/</span>       <span>\</span>  <span>|</span>
+     <span>\</span>  <span>|</span>       <span>| /</span>
+      <span>\</span>   <span>\-----/</span> <span>/</span>
+       <span>\--------/</span>
+</div>
+        <div class="mode-card-info">
+          <h3>Refined Edge</h3>
+          <p>Adds non-maximum suppression after Sobel — each edge pixel is kept only if it is the local maximum along its gradient direction. Produces single-pixel-wide outlines for sharper, cleaner contours.</p>
+        </div>
+      </div>
+
+      <!-- COLOR -->
+      <div class="mode-card">
+        <div class="mode-card-preview" aria-hidden="true"><span style="color:#e03030">@@@@@@@@@@@@##</span><span style="color:#30a030">########&&&</span>
+<span style="color:#e06020">@@@@@@################</span><span style="color:#2060e0">&&&&&++</span>
+<span style="color:#d0a020">@@@@####################</span><span style="color:#20c060">&&&&&++^^</span>
+<span style="color:#c04040">@@@######################</span><span style="color:#4080d0">&&&&+++^^^=</span>
+<span style="color:#b06020">@@#########ooo###########</span><span style="color:#60d060">&&&+++^^^==;</span>
+<span style="color:#d08030">@@#######oo   oo##########</span><span style="color:#3090c0">&&++++^^==;;</span>
+<span style="color:#e04040">@######oo       oo########</span><span style="color:#40b050">&+++++^^==;;:</span>
+<span style="color:#c07020">@#####o           o#######</span><span style="color:#5070e0">&++^^^^==;;::</span>
+<span style="color:#b05030">@####o    @  @    o######</span><span style="color:#30c080">&&+++^^^==;;::</span>
+<span style="color:#d06040">@####</span><span style="color:#80c040">                #####</span><span style="color:#4050d0">&+++^^===;;::</span>
+<span style="color:#e07030">@####</span><span style="color:#60b060">   \_____/   ####</span><span style="color:#3080e0">&++^^^===;;:..</span></div>
+        <div class="mode-card-info">
+          <h3>Colored ASCII</h3>
+          <p>Combines edge detection with per-character colour sampling. The average RGB of each character cell in the source frame drives the canvas <code>fillStyle</code>. Saturation is boosted before sampling for vivid output.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ASCII DIVIDER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++---------------------------[ TECH STACK ]-------------------------------------+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TECH STACK
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="tech-stack">
+  <div class="section">
+    <div class="section-title">
+      <h2 class="glitch" data-text="TECH STACK">TECH STACK</h2>
+    </div>
+    <p class="section-sub">// what powers the web version and the original python version</p>
+
+    <div class="tech-grid">
+
+      <!-- Web column -->
+      <div class="tech-col">
+        <h3>// Web Version</h3>
+
+        <div class="tech-item">
+          <div class="tech-icon">⬡</div>
+          <div>
+            <div class="tech-name">Canvas 2D API</div>
+            <div class="tech-desc">Renders the ASCII character grid frame-by-frame using <code>fillText()</code>. Per-character colour is applied with <code>fillStyle</code> in Colour mode. <code>toBlob()</code> powers PNG snapshot downloads.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">📹</div>
+          <div>
+            <div class="tech-name">getUserMedia API</div>
+            <div class="tech-desc">Streams live webcam video via <code>navigator.mediaDevices.getUserMedia()</code>. A hidden <code>&lt;video&gt;</code> element receives the stream and feeds frames to the offscreen canvas.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">⚙</div>
+          <div>
+            <div class="tech-name">Web Workers</div>
+            <div class="tech-desc">All pixel processing — grayscale conversion, Sobel convolution, character mapping, colour sampling — runs off the main thread via an ES module Web Worker. Zero jank during heavy processing.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">🔴</div>
+          <div>
+            <div class="tech-name">MediaRecorder API</div>
+            <div class="tech-desc">Records the ASCII canvas stream at 30 FPS, preferring VP9 WebM. On stop, chunks are assembled into a Blob and downloaded via a synthetic anchor click. No server required.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">🔗</div>
+          <div>
+            <div class="tech-name">URL / History API</div>
+            <div class="tech-desc">Every settings change updates the URL query string via <code>history.replaceState()</code> without reloading. Pasting the URL in a new tab restores the exact session — shareable links at zero cost.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Python column -->
+      <div class="tech-col">
+        <h3>// Python Version</h3>
+
+        <div class="tech-item">
+          <div class="tech-icon">👁</div>
+          <div>
+            <div class="tech-name">OpenCV (cv2)</div>
+            <div class="tech-desc">Captures webcam frames with <code>VideoCapture</code>, performs Sobel edge detection with <code>cv2.Sobel()</code>, and handles real-time display via <code>imshow()</code>. Also writes AVI recordings with XVID codec.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">🖼</div>
+          <div>
+            <div class="tech-name">Pillow (PIL)</div>
+            <div class="tech-desc">Renders each ASCII string into a proper bitmap using <code>ImageDraw.text()</code> with a TrueType font. Also provides <code>ImageEnhance.Color</code> for saturation boosting in Colour mode.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">Σ</div>
+          <div>
+            <div class="tech-name">NumPy</div>
+            <div class="tech-desc">Powers fast vectorised pixel operations: flattening image arrays, computing per-cell colour averages with <code>np.mean()</code>, and performing element-wise threshold comparisons at near-C speed.</div>
+          </div>
+        </div>
+
+        <div class="tech-item">
+          <div class="tech-icon">🐍</div>
+          <div>
+            <div class="tech-name">Python Dataclasses &amp; Enums</div>
+            <div class="tech-desc">Settings are stored in a <code>@dataclass</code> for clean default management. Render modes use an <code>Enum</code> for type-safe switching. Font instances are cached in a dict to avoid re-loading per frame.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ASCII DIVIDER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++----------------------------[ SOURCE CODE ]-----------------------------------+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SOURCE
+════════════════════════════════════════════════════════════════════════════ -->
+<section id="source">
+  <div class="section">
+    <div class="section-title">
+      <h2 class="glitch" data-text="SOURCE CODE">SOURCE CODE</h2>
+    </div>
+    <p class="section-sub">// open source — go build something weird with it</p>
+
+    <div class="source-grid">
+
+      <!-- Web repo -->
+      <div class="repo-card new-repo">
+        <span class="repo-lang">JavaScript · Vanilla</span>
+        <h3>ascii-cam-web</h3>
+        <p>
+          This page. Canvas 2D + Web Worker ASCII pipeline, four render modes,
+          WebM recording, PNG snapshot, static image upload, and shareable
+          settings URLs. No build step, no dependencies — open
+          <code>index.html</code> on a local server and go.
+        </p>
+        <a class="repo-link"
+           href="https://github.com/salman-m-498/ascii-cam-web"
+           target="_blank" rel="noopener">
+          ⬡ github.com/salman-m-498/ascii-cam-web →
+        </a>
+      </div>
+
+      <!-- Python repo -->
+      <div class="repo-card">
+        <span class="repo-lang">Python 3.8+</span>
+        <h3>asciicam (original)</h3>
+        <p>
+          The original Python project that started it all. OpenCV for
+          capture and edge detection, Pillow for rendering, NumPy for
+          number crunching. Four render modes, a full keyboard control
+          interface, real-time FPS overlay, and AVI recording.
+        </p>
+        <a class="repo-link"
+           href="https://github.com/salman-m-498/asciicam"
+           target="_blank" rel="noopener">
+          ⬡ github.com/salman-m-498/asciicam →
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Author card -->
+    <div style="margin-top:40px; border:1px solid var(--green-dark); padding:24px; max-width:520px;">
+      <div style="font-size:0.7rem;letter-spacing:0.12em;color:var(--green-dim);text-transform:uppercase;margin-bottom:12px;">
+        // author
+      </div>
+      <div style="font-size:1.1rem;color:var(--green);margin-bottom:6px;font-family:var(--font-display);letter-spacing:0.1em;">
+        Salman Moosa
+      </div>
+      <div style="font-size:0.8rem;color:var(--white);line-height:1.7;">
+        Building things at the intersection of systems, graphics, and whatever
+        seems fun. Open to new opportunities.
+      </div>
+      <div style="margin-top:14px;display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="https://github.com/salman-m-498" target="_blank" rel="noopener" class="btn" style="font-size:0.75rem;padding:5px 14px;">
+          GitHub
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ascii-divider" aria-hidden="true">
++============================================================================+</div>
+
+<footer>
+  <pre aria-hidden="true" style="font-size:0.55rem;line-height:1.2;margin-bottom:12px;opacity:0.4;">
+    ___   ___  ____  ____  ____     ____   __   __  __
+   / _ | / __// ___//  _/ /  _/    / ___| / /  /  |/  /
+  / __ |_\ \ / /__ _/ /  _/ /     / /__  / _ \/  /|_/ /
+ /_/ |_/___/ \___//___/ /___/     \___/ /_//_/_/  /_/
+  </pre>
+  <p>
+    Built with ♥ and way too many character arrays by
+    <a href="https://github.com/salman-m-498" target="_blank" rel="noopener">Salman Moosa</a>
+    &nbsp;·&nbsp;
+    MIT License
+    &nbsp;·&nbsp;
+    <a href="https://github.com/salman-m-498/asciicam" target="_blank" rel="noopener">Original Python Repo</a>
+  </p>
+  <p style="margin-top:8px;font-size:0.68rem;opacity:0.5;">
+    No cookies. No tracking. No backend. Just pixels becoming letters.
+  </p>
+</footer>
+
+
+<!-- ── Scripts ──────────────────────────────────────────────────────────────── -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
